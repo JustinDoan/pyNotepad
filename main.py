@@ -6,7 +6,7 @@ def get_text(*args):
     print(edit_area.get("1.0", 'end-1c'))
 
 def open_file(*args):
-    filename = filedialog.askopenfilename(initialdir = "/",title = "Select file")
+    filename = filedialog.askopenfilename(initialdir = "/",title = "Select file", filetypes = (("Text file","*.txt"),("All files","*.*")))
     #we can use our filename to open up our text file
     
     try:
@@ -16,8 +16,8 @@ def open_file(*args):
     except:
         #Person didn't select a file
         return
-def save_file():
-    filename = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
+def save_file(*args):
+    filename = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes = (("Text file","*.txt"),("All files","*.*")))
     if filename is None:
         return
     text = str(edit_area.get(1.0, END))
@@ -48,5 +48,6 @@ file_options.add_command(label="Save...", command=save_file)
 edit_area.focus()
 
 root.bind('<Return>', get_text)
+root.bind('<Control-s>', save_file)
 root.config(menu=main_menu)
 root.mainloop()
