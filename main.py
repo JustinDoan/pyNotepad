@@ -47,6 +47,8 @@ file_options.add_command(label="Save...", command=save_file)
 
 edit_area.focus()
 
+main_menu.add_cascade(label="Clear all", command=lambda: edit_area.delete(1.0,END))
+
 root.bind('<Return>', get_text)
 root.bind('<Control-s>', save_file)
 root.config(menu=main_menu)
