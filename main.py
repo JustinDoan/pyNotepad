@@ -37,17 +37,15 @@ mainframe.rowconfigure(0,weight=1)
 text = StringVar()
 edit_area = Text(mainframe, width=100, height= 30)
 edit_area.grid(column=0, row=0, sticky=(N, W, E, S))
-#print_button = Button(mainframe, text="Print", command=get_text).grid(column=10, row=10)
-file_options_list = {'Open File', 'Save File', 'Print File'}
 main_menu = Menu(root)
 file_options = Menu(main_menu, tearoff=0)
-main_menu.add_cascade(label="File", menu=file_options)
 file_options.add_command(label="Open...", command=open_file)
 file_options.add_command(label="Save...", command=save_file)
+#Menu Options (Top bar of Program)
+main_menu.add_cascade(label="File", menu=file_options)
+main_menu.add_cascade(label="Clear all", command=lambda: edit_area.delete(1.0,END))
 
 edit_area.focus()
-
-main_menu.add_cascade(label="Clear all", command=lambda: edit_area.delete(1.0,END))
 
 root.bind('<Return>', get_text)
 root.bind('<Control-s>', save_file)
