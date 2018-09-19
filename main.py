@@ -12,7 +12,8 @@ def open_file(*args):
     try:
         with open(filename, 'r') as file:
             edit_area.delete('1.0', END)
-            edit_area.insert('1.0', file.read())  
+            edit_area.insert('1.0', file.read())
+        root.title("Now Editing " + str(filename.split('/')[-1]))
     except:
         #Person didn't select a file
         return
@@ -33,8 +34,9 @@ mainframe = ttk.Frame(root)
 mainframe.grid(column=0, row=0,sticky=(N,W,E,S))
 mainframe.columnconfigure(0,weight=1)
 mainframe.rowconfigure(0,weight=1)
-
+#vars
 text = StringVar()
+filename = StringVar()
 edit_area = Text(mainframe, width=100, height= 30)
 edit_area.grid(column=0, row=0, sticky=(N, W, E, S))
 main_menu = Menu(root)
