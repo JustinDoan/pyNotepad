@@ -1,55 +1,69 @@
-from tkinter import *
+import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 
-def get_text(*args):
-    print(edit_area.get("1.0", 'end-1c'))
 
-def open_file(*args):
-    filename = filedialog.askopenfilename(initialdir = "/",title = "Select file", filetypes = (("Text file","*.txt"),("All files","*.*")))
-    #we can use our filename to open up our text file
+class MainApplication(tk.Frame):
     
-    try:
-        with open(filename, 'r') as file:
-            edit_area.delete('1.0', END)
-            edit_area.insert('1.0', file.read())
-        root.title("Now Editing " + str(filename.split('/')[-1]))
-    except:
-        #Person didn't select a file
-        return
-def save_file(*args):
-    filename = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes = (("Text file","*.txt"),("All files","*.*")))
-    if filename is None:
-        return
-    text = str(edit_area.get(1.0, END))
-    filename.write(text)
-    filename.close()
-root = Tk()
-root.title("Simple Text Editor")
+    def __init__(self, parent, *args, **kwargs):
+        
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.parent.title("pyNotePad")
+        
+        self.grid(column=0, row=0,sticky=(tk.N,tk.W,tk.E,tk.S))
+        self.columnconfigure(0,weight=1)
+        self.rowconfigure(0,weight=1)
+        self.text = tk.StringVar()
+        self.filename = ""
+        self.edit_area = tk.Text(self, width=100, height= 30)
+        self.edit_area.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+        self.main_menu = tk.Menu(root)
+        self.file_options = tk.Menu(self.main_menu, tearoff=0)
+        self.file_options.add_command(label="Open...", command=self.open_file)
+        self.file_options.add_command(label="Save...", command=self.save_file_as)
+        self.main_menu.add_cascade(label="File", menu=self.file_options)
+        self.main_menu.add_cascade(label="Clear all", command=lambda: self.edit_area.delete(1.0,tk.END))
+        self.edit_area.focus()
+        self.parent.bind('<Return>', self.get_text)
+        self.parent.bind('<Control-s>', self.save_file)
+        self.parent.config(menu=self.main_menu)
 
-root.grid_columnconfigure(0,weight=1)
-root.grid_rowconfigure(0,weight=1)
+    def get_text(self,*args):
+            print(self.edit_area.get("1.0", 'end-1c'))
 
-mainframe = ttk.Frame(root)
-mainframe.grid(column=0, row=0,sticky=(N,W,E,S))
-mainframe.columnconfigure(0,weight=1)
-mainframe.rowconfigure(0,weight=1)
-#vars
-text = StringVar()
-filename = StringVar()
-edit_area = Text(mainframe, width=100, height= 30)
-edit_area.grid(column=0, row=0, sticky=(N, W, E, S))
-main_menu = Menu(root)
-file_options = Menu(main_menu, tearoff=0)
-file_options.add_command(label="Open...", command=open_file)
-file_options.add_command(label="Save...", command=save_file)
-#Menu Options (Top bar of Program)
-main_menu.add_cascade(label="File", menu=file_options)
-main_menu.add_cascade(label="Clear all", command=lambda: edit_area.delete(1.0,END))
+    def open_file(self,*args):
+        self.filename = filedialog.askopenfilename(initialdir = "/",title = "Select file", filetypes = (("Text file","*.txt"),("All files","*.*")))
+        #we can use our filename to open up our text file
+        try:
+            with open(self.filename, 'r') as file:
+                self.edit_area.delete('1.0', tk.END)
+                self.edit_area.insert('1.0', file.read())
+            
+        except:
+            #Person didn't select a file
+            return
+        self.parent.title("pyNotePad - Now Editing " + str(self.filename.split('/')[-1]))
+    def save_file_as(self,*args):
+        self.filename = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes = (("Text file","*.txt"),("All files","*.*")))
+        if self.filename is None:
+            return
+        text = str(self.edit_area.get(1.0, tk.END))
+        self.filename.write(text)
+        self.filename.close()
 
-edit_area.focus()
+    def save_file(self,*args):
+        with open(self.filename, 'w') as file:
+            text = str(self.edit_area.get(1.0, tk.END))
+            file.write(text)
+            file.close()        
+        
 
-root.bind('<Return>', get_text)
-root.bind('<Control-s>', save_file)
-root.config(menu=main_menu)
-root.mainloop()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    MainApplication(root).pack(side="top", fill="both", expand=True)
+    root.mainloop()
+
+
+
