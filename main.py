@@ -5,12 +5,12 @@ from tkinter import filedialog
 class InfoText(tk.Label):
     def __init__(self, parent, *args, **kwargs):
         tk.Label.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
         self.width = 400
         self.borderwidth=2
-        self.relief = "groove"
         self.place(relx=1.0, rely=1.0,x=-1,anchor="se")
-        self.config(text="")
-
+        self.config(text="", bg="white")
+        
 class TextArea(tk.Text):
     def __init__(self, parent, *args, **kwargs):
         tk.Text.__init__(self, parent, *args, **kwargs)
