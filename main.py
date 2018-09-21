@@ -68,7 +68,8 @@ class MainApplication(tk.Frame):
         self.textArea.focus()
         #Bindings
         self.parent.bind('<Control-s>', self.save_file)
-        self.parent.bind('<Key>', self.clear_info_text)
+        self.parent.bind('<Key>', self.update_info_text)
+        self.parent.bind('<Button-1>', self.update_info_text)
         #Parent Menu configuration
         self.parent.config(menu=self.main_menu)
 
@@ -78,6 +79,10 @@ class MainApplication(tk.Frame):
 
     def set_info_text(self, msg, *args):
         self.InfoText.config(text=msg)
+
+    def update_info_text(self, *args):
+        coords = self.textArea.index(tk.INSERT).split(".")
+        self.set_info_text("Row " + coords[0] + " Col " + coords[1])
 
     def get_text(self,*args):
             print(self.textArea.get("1.0", 'end-1c'))
