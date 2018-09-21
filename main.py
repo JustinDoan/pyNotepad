@@ -2,15 +2,26 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 
+
+
 class InfoText(tk.Label):
     def __init__(self, parent, *args, **kwargs):
         tk.Label.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.width = 400
         self.borderwidth=2
-        self.place(relx=1.0, rely=1.0,x=-1,anchor="se")
+        self.place(relx=1.0, rely=1.0,x=-1, y=-1,anchor="se")
         self.config(text="", bg="white")
-        
+
+    def set_dark_mode(self, *args):
+        self.config(bg="#282c34")
+        self.config(fg="white")
+
+    def set_light_mode(self, *args):
+        self.config(bg="white")
+        self.config(fg="black")
+
+
 class TextArea(tk.Text):
     def __init__(self, parent, *args, **kwargs):
         tk.Text.__init__(self, parent, *args, **kwargs)
@@ -18,11 +29,23 @@ class TextArea(tk.Text):
         self.height=30
         self.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 
+    def set_dark_mode(self, *args):
+        self.config(bg="#282c34")
+        self.config(fg="white")
+        self.config(insertbackground="white")
+
+    def set_light_mode(self, *args):
+        self.config(bg="white")
+        self.config(fg="black")
+        self.config(insertbackground="black")
 
 class MainMenu(tk.Menu):
     def __init__(self, parent, *args,  **kwargs):
         self.parent = parent
         tk.Menu.__init__(self, parent, *args, **kwargs)
+
+
+
         self.file_options = tk.Menu(self, tearoff=0)
         self.file_options.add_command(label='{0: <20}'.format('New'))
         self.file_options.add_command(label='{0: <20}'.format('Open') + "Ctrl+O", command=self.parent.open_file)
@@ -41,6 +64,7 @@ class MainMenu(tk.Menu):
         self.add_cascade(label="File", menu=self.file_options)
         self.add_cascade(label="Edit", menu=self.edit_options)
         self.add_cascade(label="Clear all", command=lambda: self.parent.textArea.delete(1.0,tk.END))
+        self.add_cascade(label="Dark Mode", command=self.parent.set_dark_mode)
 
 class MainApplication(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -74,6 +98,18 @@ class MainApplication(tk.Frame):
         self.parent.config(menu=self.main_menu)
 
     #Functions
+    def set_dark_mode(self, *args):
+        self.InfoText.set_dark_mode()
+        self.textArea.set_dark_mode()
+        self.config(bg="#282c34")
+        self.main_menu.entryconfig(4, label="Light Mode", command=self.set_light_mode)
+
+    def set_light_mode(self, *args):
+        self.InfoText.set_light_mode()
+        self.textArea.set_light_mode()
+        self.config(bg="#282c34")
+        self.main_menu.entryconfig(4, label="Dark Mode", command=self.set_dark_mode)
+
     def clear_info_text(self, *args):
         self.InfoText.config(text="")
 
