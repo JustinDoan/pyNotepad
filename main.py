@@ -71,6 +71,7 @@ class MainApplication(tk.Frame):
             #Person didn't select a file
             return
         self.parent.title("pyNotePad - Now Editing " + str(self.filename.split('/')[-1]))
+        self.InfoText.config(text="File opened")
 
     def save_file_as(self,*args):
         self.filename = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes = (("Text file","*.txt"),("All files","*.*")))
@@ -79,6 +80,7 @@ class MainApplication(tk.Frame):
         text = str(self.textArea.get(1.0, tk.END))
         self.filename.write(text)
         self.filename.close()
+        self.InfoText.config(text="File saved")
 
     def save_file(self,*args):
         with open(self.filename, 'w') as file:
