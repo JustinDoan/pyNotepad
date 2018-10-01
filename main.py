@@ -3,13 +3,45 @@ from tkinter import ttk
 from tkinter import filedialog
 
 
+class LineNumberText(tk.Text):
+    def __init__(self, parent, *args, **kwargs):
+        tk.Text.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.config(width=4, relief="flat")
+        self.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+        self.tag_configure('tag-right', justify='right')
+        self.config(font=("Courier", 10))
+        self.config(fg="grey")
+        self.updateLineNumbers()
+    #logic for displaying number of lines in a file.
+    def updateLineNumbers(self, *args):
+        self.config(state=tk.NORMAL)
+        lineNumbers = ""
+        for x in range(int(self.parent.textArea.index('end-1c').split('.')[0])):
+            if x == int(self.parent.textArea.index('end-1c').split('.')[0])-1:
+                lineNumbers = lineNumbers + str(x+1)
+            else:
+                lineNumbers = lineNumbers + str(x+1) + "\n"
+        self.delete(1.0, tk.END)
+        self.insert(tk.END, lineNumbers, 'tag-right')
+        self.config(state=tk.DISABLED)
+        self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
+
+
+    def set_dark_mode(self, *args):
+        self.config(bg="#282c34")
+        self.config(fg="grey")
+        self.config(insertbackground="white")
+
+    def set_light_mode(self, *args):
+        self.config(bg="white")
+        self.config(fg="grey")
+        self.config(insertbackground="black")
 
 class InfoText(tk.Label):
     def __init__(self, parent, *args, **kwargs):
         tk.Label.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.width = 400
-        self.borderwidth=2
         self.place(relx=1.0, rely=1.0,x=-1, y=-1,anchor="se")
         self.config(text="", bg="white")
 
@@ -25,10 +57,8 @@ class InfoText(tk.Label):
 class TextArea(tk.Text):
     def __init__(self, parent, *args, **kwargs):
         tk.Text.__init__(self, parent, *args, **kwargs)
-        self.width=100
-        self.height=30
-        self.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
-
+        self.grid(column=20, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+        self.config(relief="flat")
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
         self.config(fg="white")
@@ -65,6 +95,7 @@ class MainMenu(tk.Menu):
         self.add_cascade(label="Edit", menu=self.edit_options)
         self.add_cascade(label="Clear all", command=lambda: self.parent.textArea.delete(1.0,tk.END))
         self.add_cascade(label="Dark Mode", command=self.parent.set_dark_mode)
+        self.add_cascade(label="Line #\'s", command=self.parent.toggle_line_numbers)
 
 class MainApplication(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -88,25 +119,46 @@ class MainApplication(tk.Frame):
         self.textArea = TextArea(self)
         self.main_menu = MainMenu(self)
         self.InfoText = InfoText(self)
+        self.lineNumber = LineNumberText(self)
         #Setting focus
         self.textArea.focus()
         #Bindings
         self.parent.bind('<Control-s>', self.save_file)
-        self.parent.bind('<Key>', self.update_info_text)
-        self.parent.bind('<Button-1>', self.update_info_text)
+        self.parent.bind('<Key>', self.updateOnKeyPress)
+        self.parent.bind('<Button-1>', self.updateOnKeyPress)
+        self.parent.bind('<MouseWheel>', self.updateOnMouseWheel)
         #Parent Menu configuration
         self.parent.config(menu=self.main_menu)
 
     #Functions
+    def toggle_line_numbers(self, *args):
+        empArr = {}
+        if self.lineNumber.grid_info():
+            self.lineNumber.grid_forget()
+            self.textArea.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+        else:
+            self.lineNumber.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+            self.textArea.grid(column=20, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+
+    def updateOnMouseWheel(self, *args):
+        self.update_info_text()
+        self.lineNumber.updateLineNumbers()
+
+    def updateOnKeyPress(self, *args):
+        self.update_info_text()
+        self.lineNumber.updateLineNumbers()
+
     def set_dark_mode(self, *args):
         self.InfoText.set_dark_mode()
         self.textArea.set_dark_mode()
+        self.lineNumber.set_dark_mode()
         self.config(bg="#282c34")
         self.main_menu.entryconfig(4, label="Light Mode", command=self.set_light_mode)
 
     def set_light_mode(self, *args):
         self.InfoText.set_light_mode()
         self.textArea.set_light_mode()
+        self.lineNumber.set_light_mode()
         self.config(bg="#282c34")
         self.main_menu.entryconfig(4, label="Dark Mode", command=self.set_dark_mode)
 
@@ -136,7 +188,7 @@ class MainApplication(tk.Frame):
             return
         self.parent.title("pyNotePad - Now Editing " + str(self.filename.split('/')[-1]))
         self.set_info_text("File Opened")
-
+        self.updateOnKeyPress()
 
     def save_file_as(self,*args):
         self.filename = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes = (("Text file","*.txt"),("All files","*.*")))
@@ -146,6 +198,7 @@ class MainApplication(tk.Frame):
         self.filename.write(text)
         self.filename.close()
         self.set_info_text("File Saved")
+        self.updateOnKeyPress()
 
     def save_file(self,*args):
         with open(self.filename, 'w') as file:
@@ -153,6 +206,7 @@ class MainApplication(tk.Frame):
             file.write(text)
             file.close()
             self.set_info_text("File Saved")
+            self.updateOnKeyPress()
     def save_and_quit(self, *args):
         with open(self.filename, 'w') as file:
             text = str(self.textArea.get(1.0, tk.END))
