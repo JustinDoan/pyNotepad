@@ -1,6 +1,49 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+import builtins
+
+class SyntaxHighlighter():
+
+    def __init__(self, parent, *args, **kwargs):
+        self.keywordList = ["class","finally"," is","return","None","continue","for","lambda","try","True","def","from","nonlocal",
+        "while","and","del","global","not","with","as","elif","if","or","yield","assert","else","import","pass","break","except","in","raise","False", "self"]
+        self.built_in_names = dir(builtins)
+        self.built_in_names.append("__init__")
+        self.keywordHightlight = "red"
+        self.builtinHightlight = "blue"
+        self.parent = parent
+
+        self.parent.textArea.tag_configure('highlight-keyword', foreground=self.keywordHightlight)
+        self.parent.textArea.tag_configure('highlight-builtins', foreground=self.builtinHightlight)
+
+    def HighlightText(self):
+
+        #keyword loop
+        for keyword in self.keywordList:
+            start = 0.0
+            while True:
+                pos = self.parent.textArea.search(keyword, start, stopindex=tk.END)
+                if not pos:
+                    break
+                self.keyword = self.parent.textArea.get(pos, pos+"+" + str(len(keyword)) + "c")
+                self.parent.textArea.delete(pos, pos+"+" + str(len(keyword)) + "c")
+                self.parent.textArea.insert(pos, keyword, 'highlight-keyword')
+                start = pos + "+1c"
+
+        for built_in_name in self.built_in_names:
+            start = 0.0
+            while True:
+                pos = self.parent.textArea.search(built_in_name, start, stopindex=tk.END)
+                if not pos:
+                    break
+                self.keyword = self.parent.textArea.get(pos, pos+"+" + str(len(built_in_name)) + "c")
+                self.parent.textArea.delete(pos, pos+"+" + str(len(built_in_name)) + "c")
+                self.parent.textArea.insert(pos, built_in_name, 'highlight-builtins')
+                start = pos + "+1c"
+
+
+
 
 
 class LineNumberText(tk.Text):
@@ -59,6 +102,7 @@ class TextArea(tk.Text):
         tk.Text.__init__(self, parent, *args, **kwargs)
         self.grid(column=20, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
         self.config(relief="flat")
+
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
         self.config(fg="white")
@@ -120,12 +164,13 @@ class MainApplication(tk.Frame):
         self.main_menu = MainMenu(self)
         self.InfoText = InfoText(self)
         self.lineNumber = LineNumberText(self)
+        self.syntaxHighlighter = SyntaxHighlighter(self)
         #Setting focus
         self.textArea.focus()
         #Bindings
         self.parent.bind('<Control-s>', self.save_file)
         self.parent.bind('<Key>', self.updateOnKeyPress)
-        self.parent.bind('<Button-1>', self.updateOnKeyPress)
+        self.parent.bind('<Button-1>', self.updateOnMousePress)
         self.parent.bind('<MouseWheel>', self.updateOnMouseWheel)
         #Parent Menu configuration
         self.parent.config(menu=self.main_menu)
@@ -144,9 +189,14 @@ class MainApplication(tk.Frame):
         self.update_info_text()
         self.lineNumber.updateLineNumbers()
 
+    def updateOnMousePress(self, *agrs):
+        self.update_info_text()
+        self.lineNumber.updateLineNumbers()
+
     def updateOnKeyPress(self, *args):
         self.update_info_text()
         self.lineNumber.updateLineNumbers()
+        self.syntaxHighlighter.HighlightText()
 
     def set_dark_mode(self, *args):
         self.InfoText.set_dark_mode()
