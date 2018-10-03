@@ -10,7 +10,7 @@ class YScrollBar(tk.Scrollbar):
     def __init__(self, parent, *args, **kwargs):
         tk.Scrollbar.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.config(command=self.parent.update_scrollbar())
+
         self.grid(column=2, row=0, sticky="nesw")
 
 class XScrollBar(tk.Scrollbar):
@@ -18,7 +18,7 @@ class XScrollBar(tk.Scrollbar):
     def __init__(self, parent, *args, **kwargs):
         tk.Scrollbar.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.config(orient=tk.HORIZONTAL,command=self.parent.update_scrollbar())
+        self.config(orient=tk.HORIZONTAL)
         self.grid(columnspan=2,column=0, row=1, sticky="nesw")
 
 
@@ -271,6 +271,9 @@ class MainApplication(tk.Frame):
         self.yScrollBar = YScrollBar(self)
         self.xScrollBar = XScrollBar(self)
 
+        self.yScrollBar.config(command=self.update_scrollbarY)
+        self.xScrollBar.config(command=self.update_scrollbarX)
+
         self.textArea.config(yscrollcommand=self.yScrollBar.set, xscrollcommand=self.xScrollBar.set)
 
         self.main_menu = MainMenu(self)
@@ -289,9 +292,12 @@ class MainApplication(tk.Frame):
 
 
     #Functions
-    def update_scrollbar(self, *args):
+    def update_scrollbarY(self, *args):
         self.textArea.yview(*args)
         self.lineNumber.yview(*args)
+
+
+    def update_scrollbarX(self, *args):
         self.textArea.xview(*args)
         self.lineNumber.xview(*args)
 
@@ -305,7 +311,7 @@ class MainApplication(tk.Frame):
             self.textArea.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
         else:
             self.lineNumber.grid(column=0, row=0, sticky=(tk.N, tk.W,tk.S))
-            self.textArea.grid(column=2, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+            self.textArea.grid(column=1, columnspan=2,row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 
     def updateOnMouseWheel(self, *args):
         self.update_info_text()
