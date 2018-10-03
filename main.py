@@ -38,10 +38,14 @@ class SyntaxHighlighter():
 
     def clearHighlight(self):
         cursorPos = self.parent.textArea.index(tk.INSERT)
+        yviewTextArea = self.parent.textArea.yview()[0]
+        yviewLineNum = self.parent.lineNumber.yview()[0]
         text = self.parent.textArea.get("1.0", 'end-1c')
         self.parent.textArea.delete("1.0", tk.END)
         self.parent.textArea.insert(tk.END, text)
         self.parent.textArea.mark_set("insert", cursorPos)
+        self.parent.textArea.yview(tk.MOVETO, yviewTextArea)
+        self.parent.lineNumber.yview(tk.MOVETO, yviewLineNum)
 
     def HighlightText(self):
 
@@ -114,15 +118,18 @@ class LineNumberText(tk.Text):
         self.tag_configure('tag-right', justify='right')
         self.config(font=("Courier", 10))
         self.config(fg="grey")
-        self.numberOfLines = 1
+        self.numberOfLines = 0
         self.updateLineNumbers(type="key")
     #logic for displaying number of lines in a file.
     def updateLineNumbers(self, type, *args):
+
+        #print(self.parent.textArea.yview()[0])
+        #print(self.yview()[0])
         if type == "mouse":
-            print(self.parent.textArea.yview()[0])
+            #print(self.parent.textArea.yview()[0])
             self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
         else:
-            if (self.numberOfLines < int(self.parent.textArea.index('end-1c').split('.')[0])):
+            if (self.numberOfLines != int(self.parent.textArea.index('end-1c').split('.')[0])):
                 self.config(state=tk.NORMAL)
                 self.numberOfLines = 0
                 lineNumbers = ""
@@ -139,12 +146,13 @@ class LineNumberText(tk.Text):
                 self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
 
                 self.see(self.parent.textArea.index(tk.INSERT))
-                print("Different number of lines")
+                #print("Different number of lines")
             else:
-                print(self.parent.textArea.index(tk.INSERT))
+                #print(self.parent.textArea.index(tk.INSERT))
                 #self.index(self.parent.textArea.index(tk.INSERT)[0])
-                self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
                 self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
+                #self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
+
 
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
@@ -266,6 +274,7 @@ class MainApplication(tk.Frame):
 
     def updateOnMouseWheel(self, *args):
         self.update_info_text()
+        self.syntaxHighlighter.HighlightText()
         self.lineNumber.updateLineNumbers(type="mouse")
 
     def updateOnMousePress(self, *agrs):
