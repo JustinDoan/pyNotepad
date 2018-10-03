@@ -6,19 +6,28 @@ import builtins
 class SyntaxHighlighter():
 
     def __init__(self, parent, *args, **kwargs):
-        self.keywordList = ["class","finally"," is","return","None","continue","for","lambda","try","True","def","from","nonlocal",
-        "while","and","del","global","not","with","as","elif","if","or","yield","assert","else","import","pass","break","except","in","raise","False", "self"]
+        self.keywordList = ["class ","finally","is ","return","None","continue","for ","lambda","try","True","def","from ","nonlocal",
+        "while "," and ","del","global","not ","with","as","elif","if ","or","yield","assert","else ","import ","pass","break","except","in ","raise","False ", "self"]
         self.built_in_names = dir(builtins)
         self.built_in_names.append("__init__")
         self.keywordHightlight = "red"
         self.builtinHightlight = "blue"
+        self.stringHighLight = "green"
         self.parent = parent
 
         self.parent.textArea.tag_configure('highlight-keyword', foreground=self.keywordHightlight)
         self.parent.textArea.tag_configure('highlight-builtins', foreground=self.builtinHightlight)
+        self.parent.textArea.tag_configure('highlight-string', foreground=self.stringHighLight)
+
 
     def HighlightText(self):
 
+        #first we need to clear all previous highlighting.
+        cursorPos = self.parent.textArea.index(tk.INSERT)
+        text = self.parent.textArea.get("1.0", 'end-1c')
+        self.parent.textArea.delete("1.0", tk.END)
+        self.parent.textArea.insert(tk.END, text)
+        self.parent.textArea.mark_set("insert", cursorPos)
         #keyword loop
         for keyword in self.keywordList:
             start = 0.0
@@ -26,25 +35,40 @@ class SyntaxHighlighter():
                 pos = self.parent.textArea.search(keyword, start, stopindex=tk.END)
                 if not pos:
                     break
-                self.keyword = self.parent.textArea.get(pos, pos+"+" + str(len(keyword)) + "c")
+
                 self.parent.textArea.delete(pos, pos+"+" + str(len(keyword)) + "c")
                 self.parent.textArea.insert(pos, keyword, 'highlight-keyword')
                 start = pos + "+1c"
-
-        for built_in_name in self.built_in_names:
-            start = 0.0
-            while True:
-                pos = self.parent.textArea.search(built_in_name, start, stopindex=tk.END)
-                if not pos:
-                    break
-                self.keyword = self.parent.textArea.get(pos, pos+"+" + str(len(built_in_name)) + "c")
-                self.parent.textArea.delete(pos, pos+"+" + str(len(built_in_name)) + "c")
-                self.parent.textArea.insert(pos, built_in_name, 'highlight-builtins')
-                start = pos + "+1c"
-
-
-
-
+        #Builtins loop
+        #for built_in_name in self.built_in_names:
+        #    start = 0.0
+        #    while True:
+        #        pos = self.parent.textArea.search(built_in_name, start, stopindex=tk.END)
+        #        if not pos:
+        #            break
+        #        self.parent.textArea.delete(pos, pos+"+" + str(len(built_in_name)) + "c")
+        #        self.parent.textArea.insert(pos, built_in_name, 'highlight-builtins')
+        #        start = pos + "+1c"
+        # string loop
+        #Need to find beginning quote, then go to next quote, and use pos of both to tag the stuff inbetween
+        start = 0.0
+        while True:
+            pos = self.parent.textArea.search("\"", start, stopindex=tk.END)
+            #we have the pos of the first quote, now need to find the second one.
+            if not pos:
+                break
+            start = pos + "+1c"
+            pos2 = self.parent.textArea.search("\"", start, stopindex=tk.END)
+            if not pos2:
+                break
+            #once we have the pos of both quotes, we take it out, and reinsert and tag.
+            pos2 = pos2 + "+1c"
+            cursorPos = self.parent.textArea.index(tk.INSERT)
+            stringText = self.parent.textArea.get(pos, pos2)
+            self.parent.textArea.delete(pos, pos2)
+            self.parent.textArea.insert(pos, stringText, 'highlight-string')
+            self.parent.textArea.mark_set("insert", cursorPos)
+            start = pos2 + "+1c"
 
 class LineNumberText(tk.Text):
     def __init__(self, parent, *args, **kwargs):
