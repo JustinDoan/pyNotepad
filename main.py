@@ -3,6 +3,7 @@ from tkinter import ttk
 from tkinter import filedialog
 import builtins
 
+
 class SyntaxHighlighter():
 
     def __init__(self, parent, *args, **kwargs):
@@ -48,6 +49,8 @@ class SyntaxHighlighter():
         self.parent.lineNumber.yview(tk.MOVETO, yviewLineNum)
 
     def HighlightText(self):
+
+        #Still work that could be done by using regex instead of simple search methods.
 
         if not self.status:
             return
@@ -123,10 +126,9 @@ class LineNumberText(tk.Text):
     #logic for displaying number of lines in a file.
     def updateLineNumbers(self, type, *args):
 
-        #print(self.parent.textArea.yview()[0])
-        #print(self.yview()[0])
+
         if type == "mouse":
-            #print(self.parent.textArea.yview()[0])
+
             self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
         else:
             if (self.numberOfLines != int(self.parent.textArea.index('end-1c').split('.')[0])):
@@ -146,12 +148,10 @@ class LineNumberText(tk.Text):
                 self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
 
                 self.see(self.parent.textArea.index(tk.INSERT))
-                #print("Different number of lines")
+
             else:
-                #print(self.parent.textArea.index(tk.INSERT))
-                #self.index(self.parent.textArea.index(tk.INSERT)[0])
                 self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
-                #self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
+
 
 
     def set_dark_mode(self, *args):
@@ -233,7 +233,7 @@ class MainApplication(tk.Frame):
 
         #Varibles
         self.filename = ""
-
+        self.numberOfKeyPresses = 0
 
         #Setting Parent/Parent config
         self.parent = parent
@@ -253,11 +253,12 @@ class MainApplication(tk.Frame):
         self.textArea.focus()
         #Bindings
         self.parent.bind('<Control-s>', self.save_file)
-        self.parent.bind('<Key>', self.updateOnKeyPress)
+        self.parent.bind('<Key>',  self.updateOnKeyPress)
         self.parent.bind('<Button-1>', self.updateOnMousePress)
         self.parent.bind('<MouseWheel>', self.updateOnMouseWheel)
         #Parent Menu configuration
         self.parent.config(menu=self.main_menu)
+
 
     #Functions
     def toggle_highlight(self, *args):
@@ -274,7 +275,6 @@ class MainApplication(tk.Frame):
 
     def updateOnMouseWheel(self, *args):
         self.update_info_text()
-        self.syntaxHighlighter.HighlightText()
         self.lineNumber.updateLineNumbers(type="mouse")
 
     def updateOnMousePress(self, *agrs):
@@ -283,9 +283,12 @@ class MainApplication(tk.Frame):
 
     def updateOnKeyPress(self, *args):
         self.update_info_text()
-        self.syntaxHighlighter.HighlightText()
+        if self.numberOfKeyPresses == 10:
+            self.syntaxHighlighter.HighlightText()
+            self.numberOfKeyPresses = 0
+        else:
+            self.numberOfKeyPresses = self.numberOfKeyPresses + 1
         self.lineNumber.updateLineNumbers(type="key")
-
 
     def set_dark_mode(self, *args):
         self.InfoText.set_dark_mode()
@@ -328,6 +331,7 @@ class MainApplication(tk.Frame):
         self.parent.title("pyNotePad - Now Editing " + str(self.filename.split('/')[-1]))
         self.set_info_text("File Opened")
         self.updateOnKeyPress()
+        self.syntaxHighlighter.HighlightText()
 
     def save_file_as(self,*args):
         self.filename = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes = (("Text file","*.txt"),("All files","*.*")))
