@@ -6,18 +6,21 @@ import builtins
 class SyntaxHighlighter():
 
     def __init__(self, parent, *args, **kwargs):
-        self.keywordList = ["class ","finally","is ","return","None","continue","for ","lambda","try","True","def","from ","nonlocal",
-        "while "," and ","del","global","not ","with","as","elif","if ","or","yield","assert","else ","import ","pass","break","except","in ","raise","False ", "self"]
+        self.keywordList = ["class ","finally","is ","return","None","continue","for ","lambda","try","def","from ","nonlocal",
+        "while "," and ","del","global","not ","with","as","elif","if ","or","yield","assert","else","import ","pass","break","except","in ","raise", "self"]
+        self.constantList = ["True", "False"]
         self.built_in_names = dir(builtins)
         self.built_in_names.append("__init__")
         self.keywordHightlight = "red"
         self.builtinHightlight = "blue"
-        self.stringHighLight = "green"
+        self.stringHighlight = "green"
+        self.constantHighlight = "gold2"
         self.parent = parent
 
         self.parent.textArea.tag_configure('highlight-keyword', foreground=self.keywordHightlight)
         self.parent.textArea.tag_configure('highlight-builtins', foreground=self.builtinHightlight)
-        self.parent.textArea.tag_configure('highlight-string', foreground=self.stringHighLight)
+        self.parent.textArea.tag_configure('highlight-string', foreground=self.stringHighlight)
+        self.parent.textArea.tag_configure('highlight-constant', foreground=self.constantHighlight)
 
 
     def HighlightText(self):
@@ -49,6 +52,19 @@ class SyntaxHighlighter():
         #        self.parent.textArea.delete(pos, pos+"+" + str(len(built_in_name)) + "c")
         #        self.parent.textArea.insert(pos, built_in_name, 'highlight-builtins')
         #        start = pos + "+1c"
+
+        #constant loop
+        for constant in self.constantList:
+            start = 0.0
+            while True:
+                pos = self.parent.textArea.search(constant, start, stopindex=tk.END)
+                if not pos:
+                    break
+
+                self.parent.textArea.delete(pos, pos+"+" + str(len(constant)) + "c")
+                self.parent.textArea.insert(pos, constant, 'highlight-constant')
+                start = pos + "+1c"
+
         # string loop
         #Need to find beginning quote, then go to next quote, and use pos of both to tag the stuff inbetween
         start = 0.0
