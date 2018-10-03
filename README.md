@@ -16,7 +16,7 @@ This version of pyNotepad works currently on all platforms, provided they suppor
 ## Experimental
 
 If you so wish, you can clone the development branch which contains experimental features that are currently being worked on.
-Some of these features include
+Some of these features include\
 Python Syntax Highlighting\
 Somewhat fixed scrolling and auto jump if you type off screen\
 More menu options and buttons
