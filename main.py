@@ -17,20 +17,39 @@ class SyntaxHighlighter():
         self.constantHighlight = "gold2"
         self.parent = parent
 
+        self.status = True
+
         self.parent.textArea.tag_configure('highlight-keyword', foreground=self.keywordHightlight)
         self.parent.textArea.tag_configure('highlight-builtins', foreground=self.builtinHightlight)
         self.parent.textArea.tag_configure('highlight-string', foreground=self.stringHighlight)
         self.parent.textArea.tag_configure('highlight-constant', foreground=self.constantHighlight)
 
 
-    def HighlightText(self):
+    def toggle_highlight(self):
 
-        #first we need to clear all previous highlighting.
+        if self.status:
+            self.clearHighlight()
+            self.status = False
+        else:
+            self.status = True
+            self.HighlightText()
+
+
+
+    def clearHighlight(self):
         cursorPos = self.parent.textArea.index(tk.INSERT)
         text = self.parent.textArea.get("1.0", 'end-1c')
         self.parent.textArea.delete("1.0", tk.END)
         self.parent.textArea.insert(tk.END, text)
         self.parent.textArea.mark_set("insert", cursorPos)
+
+    def HighlightText(self):
+
+        if not self.status:
+            return
+
+        #first we need to clear all previous highlighting.
+        self.clearHighlight()
         #keyword loop
         for keyword in self.keywordList:
             start = 0.0
@@ -43,15 +62,15 @@ class SyntaxHighlighter():
                 self.parent.textArea.insert(pos, keyword, 'highlight-keyword')
                 start = pos + "+1c"
         #Builtins loop
-        #for built_in_name in self.built_in_names:
-        #    start = 0.0
-        #    while True:
-        #        pos = self.parent.textArea.search(built_in_name, start, stopindex=tk.END)
-        #        if not pos:
-        #            break
-        #        self.parent.textArea.delete(pos, pos+"+" + str(len(built_in_name)) + "c")
-        #        self.parent.textArea.insert(pos, built_in_name, 'highlight-builtins')
-        #        start = pos + "+1c"
+        for built_in_name in self.built_in_names:
+            start = 0.0
+            while True:
+                pos = self.parent.textArea.search(built_in_name, start, stopindex=tk.END)
+                if not pos:
+                    break
+                self.parent.textArea.delete(pos, pos+"+" + str(len(built_in_name)) + "c")
+                self.parent.textArea.insert(pos, built_in_name, 'highlight-builtins')
+                start = pos + "+1c"
 
         #constant loop
         for constant in self.constantList:
@@ -91,25 +110,41 @@ class LineNumberText(tk.Text):
         tk.Text.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.config(width=4, relief="flat")
-        self.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+        self.grid(column=0, row=0, sticky=(tk.W, tk.N, tk.S))
         self.tag_configure('tag-right', justify='right')
         self.config(font=("Courier", 10))
         self.config(fg="grey")
-        self.updateLineNumbers()
+        self.numberOfLines = 1
+        self.updateLineNumbers(type="key")
     #logic for displaying number of lines in a file.
-    def updateLineNumbers(self, *args):
-        self.config(state=tk.NORMAL)
-        lineNumbers = ""
-        for x in range(int(self.parent.textArea.index('end-1c').split('.')[0])):
-            if x == int(self.parent.textArea.index('end-1c').split('.')[0])-1:
-                lineNumbers = lineNumbers + str(x+1)
-            else:
-                lineNumbers = lineNumbers + str(x+1) + "\n"
-        self.delete(1.0, tk.END)
-        self.insert(tk.END, lineNumbers, 'tag-right')
-        self.config(state=tk.DISABLED)
-        self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
+    def updateLineNumbers(self, type, *args):
+        if type == "mouse":
+            print(self.parent.textArea.yview()[0])
+            self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
+        else:
+            if (self.numberOfLines < int(self.parent.textArea.index('end-1c').split('.')[0])):
+                self.config(state=tk.NORMAL)
+                self.numberOfLines = 0
+                lineNumbers = ""
+                for x in range(int(self.parent.textArea.index('end-1c').split('.')[0])):
+                    if x == int(self.parent.textArea.index('end-1c').split('.')[0])-1:
+                        lineNumbers = lineNumbers + str(x+1)
+                    else:
+                        lineNumbers = lineNumbers + str(x+1) + "\n"
+                    self.numberOfLines = self.numberOfLines + 1
+                self.delete(1.0, tk.END)
+                self.insert(tk.END, lineNumbers, 'tag-right')
+                self.config(state=tk.DISABLED)
 
+                self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
+
+                self.see(self.parent.textArea.index(tk.INSERT))
+                print("Different number of lines")
+            else:
+                print(self.parent.textArea.index(tk.INSERT))
+                #self.index(self.parent.textArea.index(tk.INSERT)[0])
+                self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
+                self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
 
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
@@ -140,7 +175,8 @@ class InfoText(tk.Label):
 class TextArea(tk.Text):
     def __init__(self, parent, *args, **kwargs):
         tk.Text.__init__(self, parent, *args, **kwargs)
-        self.grid(column=20, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+        self.config(width=100)
+        self.grid(column=1, row=0, sticky=(tk.E, tk.N, tk.S, tk.W))
         self.config(relief="flat")
 
     def set_dark_mode(self, *args):
@@ -180,6 +216,7 @@ class MainMenu(tk.Menu):
         self.add_cascade(label="Clear all", command=lambda: self.parent.textArea.delete(1.0,tk.END))
         self.add_cascade(label="Dark Mode", command=self.parent.set_dark_mode)
         self.add_cascade(label="Line #\'s", command=self.parent.toggle_line_numbers)
+        self.add_cascade(label="Python syntax", command=self.parent.toggle_highlight)
 
 class MainApplication(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -195,10 +232,9 @@ class MainApplication(tk.Frame):
         self.parent.title("pyNotePad")
         #Setting up grid positioning
         self.grid(column=0, row=0,sticky=(tk.N,tk.W,tk.E,tk.S))
-        self.columnconfigure(0,weight=1)
-        self.rowconfigure(0,weight=1)
-
-
+        self.columnconfigure(0,weight=0)
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
         #Creating widgets
         self.textArea = TextArea(self)
         self.main_menu = MainMenu(self)
@@ -216,27 +252,31 @@ class MainApplication(tk.Frame):
         self.parent.config(menu=self.main_menu)
 
     #Functions
+    def toggle_highlight(self, *args):
+        self.syntaxHighlighter.toggle_highlight()
+
     def toggle_line_numbers(self, *args):
         empArr = {}
         if self.lineNumber.grid_info():
             self.lineNumber.grid_forget()
             self.textArea.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
         else:
-            self.lineNumber.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
-            self.textArea.grid(column=20, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+            self.lineNumber.grid(column=0, row=0, sticky=(tk.N, tk.W,tk.S))
+            self.textArea.grid(column=2, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 
     def updateOnMouseWheel(self, *args):
         self.update_info_text()
-        self.lineNumber.updateLineNumbers()
+        self.lineNumber.updateLineNumbers(type="mouse")
 
     def updateOnMousePress(self, *agrs):
         self.update_info_text()
-        self.lineNumber.updateLineNumbers()
+        self.lineNumber.updateLineNumbers(type="mouse")
 
     def updateOnKeyPress(self, *args):
         self.update_info_text()
-        self.lineNumber.updateLineNumbers()
         self.syntaxHighlighter.HighlightText()
+        self.lineNumber.updateLineNumbers(type="key")
+
 
     def set_dark_mode(self, *args):
         self.InfoText.set_dark_mode()
