@@ -382,7 +382,7 @@ class MainApplication(tk.Frame):
         self.filename.close()
         self.set_info_text("File Saved")
         self.updateOnKeyPress()
-
+        self.syntaxHighlighter.HighlightText()
     def save_file(self,*args):
         with open(self.filename, 'w') as file:
             text = str(self.textArea.get(1.0, tk.END))
@@ -390,6 +390,7 @@ class MainApplication(tk.Frame):
             file.close()
             self.set_info_text("File Saved")
             self.updateOnKeyPress()
+            self.syntaxHighlighter.HighlightText()
     def save_and_quit(self, *args):
         with open(self.filename, 'w') as file:
             text = str(self.textArea.get(1.0, tk.END))
