@@ -4,6 +4,24 @@ from tkinter import filedialog
 import builtins
 
 
+class YScrollBar(tk.Scrollbar):
+
+
+    def __init__(self, parent, *args, **kwargs):
+        tk.Scrollbar.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.config(command=self.parent.update_scrollbar())
+        self.grid(column=2, row=0, sticky="nesw")
+
+class XScrollBar(tk.Scrollbar):
+
+    def __init__(self, parent, *args, **kwargs):
+        tk.Scrollbar.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.config(orient=tk.HORIZONTAL,command=self.parent.update_scrollbar())
+        self.grid(columnspan=2,column=0, row=1, sticky="nesw")
+
+
 class SyntaxHighlighter():
 
     def __init__(self, parent, *args, **kwargs):
@@ -128,7 +146,6 @@ class LineNumberText(tk.Text):
 
 
         if type == "mouse":
-
             self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
         else:
             if (self.numberOfLines != int(self.parent.textArea.index('end-1c').split('.')[0])):
@@ -168,7 +185,7 @@ class InfoText(tk.Label):
     def __init__(self, parent, *args, **kwargs):
         tk.Label.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.place(relx=1.0, rely=1.0,x=-1, y=-1,anchor="se")
+        self.place(relx=1.0, rely=1.0,x=-17, y=-17,anchor="se")
         self.config(text="", bg="white")
 
     def set_dark_mode(self, *args):
@@ -183,9 +200,11 @@ class InfoText(tk.Label):
 class TextArea(tk.Text):
     def __init__(self, parent, *args, **kwargs):
         tk.Text.__init__(self, parent, *args, **kwargs)
-        self.config(width=100)
+        self.parent = parent
+        self.config(width=100, wrap="none")
         self.grid(column=1, row=0, sticky=(tk.E, tk.N, tk.S, tk.W))
         self.config(relief="flat")
+
 
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
@@ -243,11 +262,20 @@ class MainApplication(tk.Frame):
         self.columnconfigure(0,weight=0)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=0)
+        self.columnconfigure(2,weight=0)
         #Creating widgets
+
         self.textArea = TextArea(self)
+        self.lineNumber = LineNumberText(self)
+        self.yScrollBar = YScrollBar(self)
+        self.xScrollBar = XScrollBar(self)
+
+        self.textArea.config(yscrollcommand=self.yScrollBar.set, xscrollcommand=self.xScrollBar.set)
+
         self.main_menu = MainMenu(self)
         self.InfoText = InfoText(self)
-        self.lineNumber = LineNumberText(self)
+
         self.syntaxHighlighter = SyntaxHighlighter(self)
         #Setting focus
         self.textArea.focus()
@@ -261,6 +289,12 @@ class MainApplication(tk.Frame):
 
 
     #Functions
+    def update_scrollbar(self, *args):
+        self.textArea.yview(*args)
+        self.lineNumber.yview(*args)
+        self.textArea.xview(*args)
+        self.lineNumber.xview(*args)
+
     def toggle_highlight(self, *args):
         self.syntaxHighlighter.toggle_highlight()
 
