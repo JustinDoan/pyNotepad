@@ -3,6 +3,25 @@ from tkinter import ttk
 from tkinter import filedialog
 import builtins
 
+
+class YScrollBar(tk.Scrollbar):
+
+
+    def __init__(self, parent, *args, **kwargs):
+        tk.Scrollbar.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+
+        self.grid(column=2, row=0, sticky="nesw")
+
+class XScrollBar(tk.Scrollbar):
+
+    def __init__(self, parent, *args, **kwargs):
+        tk.Scrollbar.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.config(orient=tk.HORIZONTAL)
+        self.grid(columnspan=2,column=0, row=1, sticky="nesw")
+
+
 class SyntaxHighlighter():
 
     def __init__(self, parent, *args, **kwargs):
@@ -38,12 +57,18 @@ class SyntaxHighlighter():
 
     def clearHighlight(self):
         cursorPos = self.parent.textArea.index(tk.INSERT)
+        yviewTextArea = self.parent.textArea.yview()[0]
+        yviewLineNum = self.parent.lineNumber.yview()[0]
         text = self.parent.textArea.get("1.0", 'end-1c')
         self.parent.textArea.delete("1.0", tk.END)
         self.parent.textArea.insert(tk.END, text)
         self.parent.textArea.mark_set("insert", cursorPos)
+        self.parent.textArea.yview(tk.MOVETO, yviewTextArea)
+        self.parent.lineNumber.yview(tk.MOVETO, yviewLineNum)
 
     def HighlightText(self):
+
+        #Still work that could be done by using regex instead of simple search methods.
 
         if not self.status:
             return
@@ -114,15 +139,16 @@ class LineNumberText(tk.Text):
         self.tag_configure('tag-right', justify='right')
         self.config(font=("Courier", 10))
         self.config(fg="grey")
-        self.numberOfLines = 1
+        self.numberOfLines = 0
         self.updateLineNumbers(type="key")
     #logic for displaying number of lines in a file.
     def updateLineNumbers(self, type, *args):
+
+
         if type == "mouse":
-            print(self.parent.textArea.yview()[0])
             self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
         else:
-            if (self.numberOfLines < int(self.parent.textArea.index('end-1c').split('.')[0])):
+            if (self.numberOfLines != int(self.parent.textArea.index('end-1c').split('.')[0])):
                 self.config(state=tk.NORMAL)
                 self.numberOfLines = 0
                 lineNumbers = ""
@@ -139,12 +165,11 @@ class LineNumberText(tk.Text):
                 self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
 
                 self.see(self.parent.textArea.index(tk.INSERT))
-                print("Different number of lines")
+
             else:
-                print(self.parent.textArea.index(tk.INSERT))
-                #self.index(self.parent.textArea.index(tk.INSERT)[0])
-                self.parent.textArea.see(self.parent.textArea.index(tk.INSERT))
                 self.yview(tk.MOVETO, self.parent.textArea.yview()[0])
+
+
 
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
@@ -160,7 +185,7 @@ class InfoText(tk.Label):
     def __init__(self, parent, *args, **kwargs):
         tk.Label.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.place(relx=1.0, rely=1.0,x=-1, y=-1,anchor="se")
+        self.place(relx=1.0, rely=1.0,x=-17, y=-17,anchor="se")
         self.config(text="", bg="white")
 
     def set_dark_mode(self, *args):
@@ -175,9 +200,11 @@ class InfoText(tk.Label):
 class TextArea(tk.Text):
     def __init__(self, parent, *args, **kwargs):
         tk.Text.__init__(self, parent, *args, **kwargs)
-        self.config(width=100)
+        self.parent = parent
+        self.config(width=100, wrap="none")
         self.grid(column=1, row=0, sticky=(tk.E, tk.N, tk.S, tk.W))
         self.config(relief="flat")
+
 
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
@@ -225,7 +252,7 @@ class MainApplication(tk.Frame):
 
         #Varibles
         self.filename = ""
-
+        self.numberOfKeyPresses = 0
 
         #Setting Parent/Parent config
         self.parent = parent
@@ -235,23 +262,45 @@ class MainApplication(tk.Frame):
         self.columnconfigure(0,weight=0)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=0)
+        self.columnconfigure(2,weight=0)
         #Creating widgets
+
         self.textArea = TextArea(self)
+        self.lineNumber = LineNumberText(self)
+        self.yScrollBar = YScrollBar(self)
+        self.xScrollBar = XScrollBar(self)
+
+        self.yScrollBar.config(command=self.update_scrollbarY)
+        self.xScrollBar.config(command=self.update_scrollbarX)
+
+        self.textArea.config(yscrollcommand=self.yScrollBar.set, xscrollcommand=self.xScrollBar.set)
+
         self.main_menu = MainMenu(self)
         self.InfoText = InfoText(self)
-        self.lineNumber = LineNumberText(self)
+
         self.syntaxHighlighter = SyntaxHighlighter(self)
         #Setting focus
         self.textArea.focus()
         #Bindings
         self.parent.bind('<Control-s>', self.save_file)
-        self.parent.bind('<Key>', self.updateOnKeyPress)
+        self.parent.bind('<Key>',  self.updateOnKeyPress)
         self.parent.bind('<Button-1>', self.updateOnMousePress)
         self.parent.bind('<MouseWheel>', self.updateOnMouseWheel)
         #Parent Menu configuration
         self.parent.config(menu=self.main_menu)
 
+
     #Functions
+    def update_scrollbarY(self, *args):
+        self.textArea.yview(*args)
+        self.lineNumber.yview(*args)
+
+
+    def update_scrollbarX(self, *args):
+        self.textArea.xview(*args)
+        self.lineNumber.xview(*args)
+
     def toggle_highlight(self, *args):
         self.syntaxHighlighter.toggle_highlight()
 
@@ -262,7 +311,7 @@ class MainApplication(tk.Frame):
             self.textArea.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
         else:
             self.lineNumber.grid(column=0, row=0, sticky=(tk.N, tk.W,tk.S))
-            self.textArea.grid(column=2, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+            self.textArea.grid(column=1, columnspan=2,row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 
     def updateOnMouseWheel(self, *args):
         self.update_info_text()
@@ -274,9 +323,12 @@ class MainApplication(tk.Frame):
 
     def updateOnKeyPress(self, *args):
         self.update_info_text()
-        self.syntaxHighlighter.HighlightText()
+        if self.numberOfKeyPresses == 10:
+            self.syntaxHighlighter.HighlightText()
+            self.numberOfKeyPresses = 0
+        else:
+            self.numberOfKeyPresses = self.numberOfKeyPresses + 1
         self.lineNumber.updateLineNumbers(type="key")
-
 
     def set_dark_mode(self, *args):
         self.InfoText.set_dark_mode()
@@ -319,6 +371,7 @@ class MainApplication(tk.Frame):
         self.parent.title("pyNotePad - Now Editing " + str(self.filename.split('/')[-1]))
         self.set_info_text("File Opened")
         self.updateOnKeyPress()
+        self.syntaxHighlighter.HighlightText()
 
     def save_file_as(self,*args):
         self.filename = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes = (("Text file","*.txt"),("All files","*.*")))
