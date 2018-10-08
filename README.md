@@ -21,7 +21,7 @@ If you so wish, you can clone the development branch which contains experimental
 Some of these features include\
 More menu options and buttons\
 Introducing Tabs\
-Possible Session History and Correctly working Undo\
+Possible Session History and Correctly working Undo
 
 ## What Might be added in the future?
 Fully working tabs, multiple files open at the same time\
