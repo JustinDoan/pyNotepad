@@ -19,4 +19,12 @@ This version of pyNotepad works currently on all platforms, provided they suppor
 
 If you so wish, you can clone the development branch which contains experimental features that are currently being worked on.\
 Some of these features include\
-More menu options and buttons
+More menu options and buttons\
+Introducing Tabs\
+Possible Session History and Correctly working Undo\
+
+## What Might be added in the future?
+Fully working tabs, multiple files open at the same time\
+Formatting options and some settings\
+Some kind of xml settings file to remember your settings\
+Remembering where you opened a file
