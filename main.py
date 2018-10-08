@@ -4,6 +4,83 @@ from tkinter import filedialog
 import builtins
 
 
+
+
+
+
+
+
+class Tab(tk.Label):
+
+    def __init__(self, parent, file, *args, **kwargs):
+        tk.Label.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+
+        if file is None:
+            file = "default"
+            self.name = "Untitled"
+            self.text = ""
+        else:
+            self.name = file.split('\\')[-1]
+            with open(self.filename, 'r') as openFile:
+                self.text = openFile.read()
+        self.file = file
+        self.visible = True
+        self.active = True
+
+
+
+        self.grid(column=0, row=0)
+        self.config(borderwidth=2, relief="groove")
+        self.bind("<Button-1>", lambda x: self.parent.updateTabDisplay(self))
+
+class TabManager(tk.Frame):
+    #This object manages tabs up at the top of the screen
+    #This also handles the controls over those tabs
+
+    #Since this is frame, i can use pack inside of it for the tabs, allowing them to stay in one column.
+    def __init__(self, parent, files=None, *args, **kwargs):
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        #Good code for later when we can start up with files already open.
+        if files is None:
+            files = []
+        self.files = files
+        self.parent = parent
+        #On startup there is no saved file yet, so we don't have a dir/file to put in place.
+        #Lets make a default tab object and insert it in
+        self.grid(column=0,columnspan=3, row=0,sticky=(tk.N,tk.W,tk.E,tk.S))
+        self.config(height=30)
+        self.tabs = []
+        self.addNewTab(None)
+
+
+    def addNewTab(self, file):
+        newTab = Tab(self, file)
+        self.tabs.append(newTab)
+        self.updateTabDisplay(newTab)
+
+    def removeTab(self, tab):
+        self.tabs.remove(tab)
+
+    def updateTabDisplay(self, activeTab):
+        activeTab.active = True
+        #If we're updating our tab display, we also need to make sure we set the correct active tab.
+        #Thus we will always take the tab that needs to be active.
+        for tab in self.tabs:
+            if tab != activeTab:
+                tab.config(bg="lightgrey")
+            else:
+                tab.config(bg="white")
+        for index, tab in enumerate(self.tabs):
+            tab.grid(column=index, row=0)
+            tab.configure(text=tab.name)
+            if not tab.active:
+                tab.configure(bg = "grey")
+
+        #When we update the Tab display we also need to update our text that is displayed as well.
+
+
+
 class YScrollBar(tk.Scrollbar):
 
 
@@ -11,7 +88,7 @@ class YScrollBar(tk.Scrollbar):
         tk.Scrollbar.__init__(self, parent, *args, **kwargs)
         self.parent = parent
 
-        self.grid(column=2, row=0, sticky="nesw")
+        self.grid(column=2, row=1, sticky="nesw")
 
 class XScrollBar(tk.Scrollbar):
 
@@ -19,7 +96,7 @@ class XScrollBar(tk.Scrollbar):
         tk.Scrollbar.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.config(orient=tk.HORIZONTAL)
-        self.grid(columnspan=2,column=0, row=1, sticky="nesw")
+        self.grid(columnspan=2,column=0, row=3, sticky="nesw")
 
 
 class SyntaxHighlighter():
@@ -35,8 +112,8 @@ class SyntaxHighlighter():
         self.stringHighlight = "green"
         self.constantHighlight = "gold2"
         self.parent = parent
-
-        self.status = True
+        #False by default, need to implement start up options.
+        self.status = False
 
         self.parent.textArea.tag_configure('highlight-keyword', foreground=self.keywordHightlight)
         self.parent.textArea.tag_configure('highlight-builtins', foreground=self.builtinHightlight)
@@ -135,7 +212,7 @@ class LineNumberText(tk.Text):
         tk.Text.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.config(width=4, relief="flat")
-        self.grid(column=0, row=0, sticky=(tk.W, tk.N, tk.S))
+        self.grid(column=0, row=1, sticky=(tk.W, tk.N, tk.S))
         self.tag_configure('tag-right', justify='right')
         self.config(font=("Courier", 10))
         self.config(fg="grey")
@@ -202,9 +279,12 @@ class TextArea(tk.Text):
         tk.Text.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.config(width=100, wrap="none")
-        self.grid(column=1, row=0, sticky=(tk.E, tk.N, tk.S, tk.W))
+        self.grid(column=1, row=1, sticky=(tk.E, tk.N, tk.S, tk.W))
         self.config(relief="flat")
 
+    def replace_text(self, text):
+        self.delete(1.0,tk.END)
+        self.insert(tk.END, text)
 
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
@@ -224,26 +304,35 @@ class MainMenu(tk.Menu):
 
 
         self.file_options = tk.Menu(self, tearoff=0)
-        self.file_options.add_command(label='{0: <20}'.format('New'))
-        self.file_options.add_command(label='{0: <20}'.format('Open') + "Ctrl+O", command=self.parent.open_file)
-        self.file_options.add_command(label='{0: <20}'.format('Save')  + "Ctrl+S", command=self.parent.save_file)
-        self.file_options.add_command(label='{0: <20}'.format('Save as...'), command=self.parent.save_file_as)
-        self.file_options.add_command(label='{0: <20}'.format('Exit'), command=self.parent.save_and_quit)
+        self.file_options.add_command(label=self.formatMenuEntry('New'))
+        self.file_options.add_command(label=self.formatMenuEntry('Open') + "Ctrl+O", command=self.parent.open_file)
+        self.file_options.add_command(label=self.formatMenuEntry('Save')  + "Ctrl+S", command=self.parent.save_file)
+        self.file_options.add_command(label=self.formatMenuEntry('Save as...'), command=self.parent.save_file_as)
+        self.file_options.add_command(label=self.formatMenuEntry('Exit'), command=self.parent.save_and_quit)
 
         #Need to be Implemented
         self.edit_options = tk.Menu(self, tearoff=0)
-        self.edit_options.add_command(label='{0: <20}'.format('Copy') + "Ctrl+C")
-        self.edit_options.add_command(label='{0: <20}'.format('Cut') + "Ctrl+V")
-        self.edit_options.add_command(label='{0: <20}'.format('Select All') + "Ctrl+A")
+        self.edit_options.add_command(label=self.formatMenuEntry('Copy') + "Ctrl+C")
+        self.edit_options.add_command(label=self.formatMenuEntry('Cut') + "Ctrl+V")
+        self.edit_options.add_command(label=self.formatMenuEntry('Select All') + "Ctrl+A")
 
-
+        #Format Options
+        self.format_options = tk.Menu(self, tearoff=0)
+        self.format_options.add_command(label=self.formatMenuEntry('Toggle Python Syntax Highlight'), command=self.parent.toggle_highlight)
+        self.format_options.add_command(label=self.formatMenuEntry('Toggle Line Numbers'), command=self.parent.toggle_line_numbers)
 
         self.add_cascade(label="File", menu=self.file_options)
         self.add_cascade(label="Edit", menu=self.edit_options)
+        self.add_cascade(label="Format", menu=self.format_options)
         self.add_cascade(label="Clear all", command=lambda: self.parent.textArea.delete(1.0,tk.END))
         self.add_cascade(label="Dark Mode", command=self.parent.set_dark_mode)
-        self.add_cascade(label="Line #\'s", command=self.parent.toggle_line_numbers)
-        self.add_cascade(label="Python syntax", command=self.parent.toggle_highlight)
+        self.add_cascade(label="Add Tab", command=lambda: self.parent.tabManager.addNewTab("Test Tab"))
+
+    def formatMenuEntry(self, menuEntryText, *args):
+        formattedString = '{0: <20}'.format(menuEntryText)
+        return formattedString
+
+
 
 class MainApplication(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -261,11 +350,12 @@ class MainApplication(tk.Frame):
         self.grid(column=0, row=0,sticky=(tk.N,tk.W,tk.E,tk.S))
         self.columnconfigure(0,weight=0)
         self.columnconfigure(1, weight=1)
-        self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, weight=0)
+        self.rowconfigure(1, weight=1)
+        self.rowconfigure(2, weight=0)
         self.columnconfigure(2,weight=0)
         #Creating widgets
 
+        self.tabManager = TabManager(self)
         self.textArea = TextArea(self)
         self.lineNumber = LineNumberText(self)
         self.yScrollBar = YScrollBar(self)
@@ -308,10 +398,10 @@ class MainApplication(tk.Frame):
         empArr = {}
         if self.lineNumber.grid_info():
             self.lineNumber.grid_forget()
-            self.textArea.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+            self.textArea.grid(column=0, row=1, sticky=(tk.N, tk.W, tk.E, tk.S))
         else:
-            self.lineNumber.grid(column=0, row=0, sticky=(tk.N, tk.W,tk.S))
-            self.textArea.grid(column=1, columnspan=2,row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+            self.lineNumber.grid(column=0, row=1, sticky=(tk.N, tk.W,tk.S))
+            self.textArea.grid(column=1, columnspan=2,row=1, sticky=(tk.N, tk.W, tk.E, tk.S))
 
     def updateOnMouseWheel(self, *args):
         self.update_info_text()
@@ -335,14 +425,14 @@ class MainApplication(tk.Frame):
         self.textArea.set_dark_mode()
         self.lineNumber.set_dark_mode()
         self.config(bg="#282c34")
-        self.main_menu.entryconfig(4, label="Light Mode", command=self.set_light_mode)
+        self.main_menu.entryconfig(5, label="Light Mode", command=self.set_light_mode)
 
     def set_light_mode(self, *args):
         self.InfoText.set_light_mode()
         self.textArea.set_light_mode()
         self.lineNumber.set_light_mode()
-        self.config(bg="#282c34")
-        self.main_menu.entryconfig(4, label="Dark Mode", command=self.set_dark_mode)
+        self.config(bg="white")
+        self.main_menu.entryconfig(5, label="Dark Mode", command=self.set_dark_mode)
 
     def clear_info_text(self, *args):
         self.InfoText.config(text="")
@@ -399,5 +489,5 @@ class MainApplication(tk.Frame):
             exit()
 if __name__ == "__main__":
     root = tk.Tk()
-    MainApplication(root).pack(side="top", fill="both", expand=True)
+    MainApplication(root).grid(column=0, row=0, sticky="WENS")
     root.mainloop()
