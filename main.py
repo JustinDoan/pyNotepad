@@ -21,10 +21,10 @@ class Tab(tk.Label):
             self.name = "Untitled"
             self.text = ""
         else:
-            self.file = file
             self.name = file.split('\\')[-1]
-            with open(self.file, 'r') as openFile:
+            with open(self.filename, 'r') as openFile:
                 self.text = openFile.read()
+        self.file = file
         self.visible = True
         self.active = True
 
@@ -83,12 +83,10 @@ class TabManager(tk.Frame):
 
 class YScrollBar(tk.Scrollbar):
 
-
     def __init__(self, parent, *args, **kwargs):
         tk.Scrollbar.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-
-        self.grid(column=2, row=1, sticky="nesw")
+        self.grid(column=2, row=1, sticky=(tk.N, tk.S))
 
 class XScrollBar(tk.Scrollbar):
 
@@ -96,7 +94,7 @@ class XScrollBar(tk.Scrollbar):
         tk.Scrollbar.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.config(orient=tk.HORIZONTAL)
-        self.grid(columnspan=2,column=0, row=3, sticky="nesw")
+        self.grid(columnspan=2,column=0, row=3, sticky=(tk.W, tk.E, tk.S))
 
 
 class SyntaxHighlighter():
@@ -326,7 +324,7 @@ class MainMenu(tk.Menu):
         self.add_cascade(label="Format", menu=self.format_options)
         self.add_cascade(label="Clear all", command=lambda: self.parent.textArea.delete(1.0,tk.END))
         self.add_cascade(label="Dark Mode", command=self.parent.set_dark_mode)
-        self.add_cascade(label="Add Tab", command=lambda: self.parent.tabManager.addNewTab(None))
+        self.add_cascade(label="Add Tab", command=lambda: self.parent.tabManager.addNewTab("Test Tab"))
 
     def formatMenuEntry(self, menuEntryText, *args):
         formattedString = '{0: <20}'.format(menuEntryText)
@@ -489,5 +487,5 @@ class MainApplication(tk.Frame):
             exit()
 if __name__ == "__main__":
     root = tk.Tk()
-    MainApplication(root).grid(column=0, row=0, sticky="WENS")
+    MainApplication(root).pack(fill=tk.BOTH, expand=1)
     root.mainloop()
