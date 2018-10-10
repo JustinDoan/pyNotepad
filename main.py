@@ -130,11 +130,13 @@ class TabManager(tk.Frame):
                     tab.config(bg="lightgrey")
                 else:
                     tab.config(bg="#15171c")
+                    tab.config(fg="grey")
             else:
                 if tab.light == True:
                     tab.config(bg="white")
                 else:
                     tab.config(bg="#282c34")
+                    tab.config(fg="white")
         for index, tab in enumerate(self.tabs):
             tab.grid(column=index, row=0)
             if tab.edited == True:
@@ -277,7 +279,11 @@ class LineNumberText(tk.Text):
         tk.Text.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.config(width=4, relief="flat")
-        self.grid(column=0, row=1, sticky=(tk.W, tk.N, tk.S))
+        #Uncomment below line to start with line numbers.
+        self.active = False
+
+        if self.active:
+            self.grid(column=0, row=1, sticky=(tk.W, tk.N, tk.S))
         self.tag_configure('tag-right', justify='right')
         self.config(font=("Courier", 10))
         self.config(fg="grey")
