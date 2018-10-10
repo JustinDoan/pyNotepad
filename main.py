@@ -12,27 +12,51 @@ import builtins
 
 class Tab(tk.Label):
 
+    #These are basically our files. We will eventually even store session history in this object
+    #Anything that has to do with a file, should be saved to this object, since it represents the file.
+
+
     def __init__(self, parent, file, *args, **kwargs):
         tk.Label.__init__(self, parent, *args, **kwargs)
         self.parent = parent
 
         if file is None:
-            file = "default"
+            self.file = "default"
             self.name = "Untitled"
             self.text = ""
         else:
-            self.name = file.split('\\')[-1]
-            with open(self.filename, 'r') as openFile:
+            self.file = file
+            self.name = self.file.split('/')[-1]
+            with open(self.file, 'r') as openFile:
                 self.text = openFile.read()
-        self.file = file
         self.visible = True
         self.active = True
+
+        #Other things we can keep track of on a file by file basis
+        self.currentYView = ""
+        self.edited = False
+        self.light = True
+
+
 
 
 
         self.grid(column=0, row=0)
         self.config(borderwidth=2, relief="groove")
-        self.bind("<Button-1>", lambda x: self.parent.updateTabDisplay(self))
+        self.bind("<Button-1>", lambda x: self.parent.setActiveTab(self))
+
+    def saveText(self, *args):
+        self.text = self.parent.parent.textArea.get(1.0,"end-1c")
+
+    def set_dark_mode(self, *args):
+        self.config(bg="#282c34")
+        self.config(fg="white")
+        self.light = False
+
+    def set_light_mode(self, *args):
+        self.config(bg="white")
+        self.config(fg="black")
+        self.light = True
 
 class TabManager(tk.Frame):
     #This object manages tabs up at the top of the screen
@@ -42,6 +66,7 @@ class TabManager(tk.Frame):
     def __init__(self, parent, files=None, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         #Good code for later when we can start up with files already open.
+        self.activeTab = ""
         if files is None:
             files = []
         self.files = files
@@ -53,33 +78,75 @@ class TabManager(tk.Frame):
         self.tabs = []
         self.addNewTab(None)
 
+    def set_dark_mode(self, *args):
+        for tab in self.tabs:
+            tab.set_dark_mode()
+        self.config(bg="#282c34")
+        self.updateTabDisplay()
+
+    def set_light_mode(self, *args):
+        for tab in self.tabs:
+            tab.set_light_mode()
+        self.config(bg="white")
+        self.updateTabDisplay()
+
+    def saveActiveTab(self):
+        self.activeTab.saveText()
+
+    def setActiveTab(self, tab):
+        self.saveActiveTab()
+        self.activeTab = tab
+        self.updateTabDisplay()
+        self.parent.syntaxHighlighter.HighlightText()
+
 
     def addNewTab(self, file):
         newTab = Tab(self, file)
         self.tabs.append(newTab)
-        self.updateTabDisplay(newTab)
+        self.activeTab = newTab
+        self.updateTabDisplay()
 
     def removeTab(self, tab):
         self.tabs.remove(tab)
+        self.updateTabDisplay()
 
-    def updateTabDisplay(self, activeTab):
-        activeTab.active = True
+    def updateTabDisplay(self):
+        self.activeTab.active = True
         #If we're updating our tab display, we also need to make sure we set the correct active tab.
         #Thus we will always take the tab that needs to be active.
+
+        #If we just opened our program, we will have an empty default tab, we should remove this if there is nothing in it.
+        #However, if we only have one tab, we shouldn't remove it.
+        tabToRemove = ""
+        if len(self.tabs) == 2:
+            for tab in self.tabs:
+                if tab.file == "default" and tab.text == "":
+                    tabToRemove = tab
+        if tabToRemove != "":
+            self.removeTab(tabToRemove)
         for tab in self.tabs:
-            if tab != activeTab:
-                tab.config(bg="lightgrey")
+            if tab != self.activeTab:
+                if tab.light == True:
+                    tab.config(bg="lightgrey")
+                else:
+                    tab.config(bg="#15171c")
             else:
-                tab.config(bg="white")
+                if tab.light == True:
+                    tab.config(bg="white")
+                else:
+                    tab.config(bg="#282c34")
         for index, tab in enumerate(self.tabs):
             tab.grid(column=index, row=0)
-            tab.configure(text=tab.name)
+            if tab.edited == True:
+                tab.configure(text=tab.name + "*")
+            else:
+                tab.configure(text=tab.name)
             if not tab.active:
                 tab.configure(bg = "grey")
 
         #When we update the Tab display we also need to update our text that is displayed as well.
-
-
+        self.parent.textArea.replace_text(self.activeTab.text)
+        self.parent.lineNumber.updateLineNumbers("tab")
 
 class YScrollBar(tk.Scrollbar):
 
@@ -324,7 +391,7 @@ class MainMenu(tk.Menu):
         self.add_cascade(label="Format", menu=self.format_options)
         self.add_cascade(label="Clear all", command=lambda: self.parent.textArea.delete(1.0,tk.END))
         self.add_cascade(label="Dark Mode", command=self.parent.set_dark_mode)
-        self.add_cascade(label="Add Tab", command=lambda: self.parent.tabManager.addNewTab("Test Tab"))
+        self.add_cascade(label="Add Tab", command=lambda: self.parent.tabManager.addNewTab(None))
 
     def formatMenuEntry(self, menuEntryText, *args):
         formattedString = '{0: <20}'.format(menuEntryText)
@@ -353,9 +420,10 @@ class MainApplication(tk.Frame):
         self.columnconfigure(2,weight=0)
         #Creating widgets
 
-        self.tabManager = TabManager(self)
+
         self.textArea = TextArea(self)
         self.lineNumber = LineNumberText(self)
+        self.tabManager = TabManager(self)
         self.yScrollBar = YScrollBar(self)
         self.xScrollBar = XScrollBar(self)
 
@@ -409,6 +477,10 @@ class MainApplication(tk.Frame):
         self.update_info_text()
         self.lineNumber.updateLineNumbers(type="mouse")
 
+    def updateOnFileOpen(self, *args):
+        self.update_info_text()
+        self.lineNumber.updateLineNumbers(type="key")
+
     def updateOnKeyPress(self, *args):
         self.update_info_text()
         if self.numberOfKeyPresses == 10:
@@ -417,11 +489,15 @@ class MainApplication(tk.Frame):
         else:
             self.numberOfKeyPresses = self.numberOfKeyPresses + 1
         self.lineNumber.updateLineNumbers(type="key")
+        self.tabManager.activeTab.edited = True
+        self.tabManager.activeTab.saveText()
+        self.tabManager.updateTabDisplay()
 
     def set_dark_mode(self, *args):
         self.InfoText.set_dark_mode()
         self.textArea.set_dark_mode()
         self.lineNumber.set_dark_mode()
+        self.tabManager.set_dark_mode()
         self.config(bg="#282c34")
         self.main_menu.entryconfig(5, label="Light Mode", command=self.set_light_mode)
 
@@ -429,6 +505,7 @@ class MainApplication(tk.Frame):
         self.InfoText.set_light_mode()
         self.textArea.set_light_mode()
         self.lineNumber.set_light_mode()
+        self.tabManager.set_light_mode()
         self.config(bg="white")
         self.main_menu.entryconfig(5, label="Dark Mode", command=self.set_dark_mode)
 
@@ -457,8 +534,9 @@ class MainApplication(tk.Frame):
             #Person didn't select a file
             return
         self.parent.title("pyNotePad - Now Editing " + str(self.filename.split('/')[-1]))
+        self.tabManager.addNewTab(self.filename)
         self.set_info_text("File Opened")
-        self.updateOnKeyPress()
+        self.updateOnFileOpen()
         self.syntaxHighlighter.HighlightText()
 
     def save_file_as(self,*args):
@@ -472,13 +550,15 @@ class MainApplication(tk.Frame):
         self.updateOnKeyPress()
         self.syntaxHighlighter.HighlightText()
     def save_file(self,*args):
-        with open(self.filename, 'w') as file:
+        with open(self.tabManager.activeTab.file, 'w') as file:
             text = str(self.textArea.get(1.0, tk.END))
             file.write(text)
             file.close()
             self.set_info_text("File Saved")
             self.updateOnKeyPress()
             self.syntaxHighlighter.HighlightText()
+        self.tabManager.activeTab.edited = False
+        self.tabManager.updateTabDisplay()
     def save_and_quit(self, *args):
         with open(self.filename, 'w') as file:
             text = str(self.textArea.get(1.0, tk.END))
