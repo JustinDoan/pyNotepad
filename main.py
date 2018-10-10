@@ -21,10 +21,10 @@ class Tab(tk.Label):
             self.name = "Untitled"
             self.text = ""
         else:
+            self.file = file
             self.name = file.split('\\')[-1]
-            with open(self.filename, 'r') as openFile:
+            with open(self.file, 'r') as openFile:
                 self.text = openFile.read()
-        self.file = file
         self.visible = True
         self.active = True
 
@@ -326,7 +326,7 @@ class MainMenu(tk.Menu):
         self.add_cascade(label="Format", menu=self.format_options)
         self.add_cascade(label="Clear all", command=lambda: self.parent.textArea.delete(1.0,tk.END))
         self.add_cascade(label="Dark Mode", command=self.parent.set_dark_mode)
-        self.add_cascade(label="Add Tab", command=lambda: self.parent.tabManager.addNewTab("Test Tab"))
+        self.add_cascade(label="Add Tab", command=lambda: self.parent.tabManager.addNewTab(None))
 
     def formatMenuEntry(self, menuEntryText, *args):
         formattedString = '{0: <20}'.format(menuEntryText)
