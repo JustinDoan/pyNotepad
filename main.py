@@ -100,7 +100,7 @@ class TabManager(tk.Frame):
         self.parent = parent
         #On startup there is no saved file yet, so we don't have a dir/file to put in place.
         #Lets make a default tab object and insert it in
-        self.grid(column=0,columnspan=3, row=0,sticky=(tk.N,tk.W,tk.E,tk.S))
+        self.grid(column=0,columnspan=3, row=0, sticky="nsew")
         self.config(height=3)
         self.tabs = []
         self.numberOfTabs = 0
@@ -179,14 +179,11 @@ class TabManager(tk.Frame):
             self.numberOfTabs = self.numberOfTabs + 1
             for index, tab in enumerate(self.tabs):
                 tab.grid(column=index, row=0)
-
         for index, tab in enumerate(self.tabs):
             if tab.edited == True and not tab.tabLabel.cget("text")[-1] == "*":
                     tab.tabLabel.configure(text=tab.tabLabel.cget("text") + "*")
             elif tab.tabLabel.cget("text")[-1] == "*" and tab.edited == False:
                 tab.tabLabel.configure(text=tab.tabLabel.cget("text")[:-1])
-            if not tab.active:
-                tab.configure(bg = "grey")
         #When we update the Tab display we also need to update our text that is displayed as well.
         if not self.activeTab.text == "":
             self.parent.textArea.replace_text(self.activeTab.text)
