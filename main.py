@@ -7,55 +7,82 @@ import builtins
 
 
 
+class closeButton(tk.Button):
 
+        def __init__(self, parent, *args, **kwargs):
+            tk.Button.__init__(self, parent, *args, **kwargs)
+            self.parent = parent
+            self.grid(column=1, row=0)
+            self.config(text = "x", height=1, relief="flat")
+            self.bind("<Button-1>", lambda x: self.parent.parent.removeTab(self.parent))
 
-
-class Tab(tk.Label):
+class Tab(tk.Frame):
 
     #These are basically our files. We will eventually even store session history in this object
     #Anything that has to do with a file, should be saved to this object, since it represents the file.
 
 
     def __init__(self, parent, file, *args, **kwargs):
-        tk.Label.__init__(self, parent, *args, **kwargs)
+        tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
+
+
+        #Need to implement a Type option for tabs
+        #Either be a "New", "Start-up", "Regular"
+        #Start up tab will be able to be closed on new file/open file
+        #New tabs won't close unless specifically closed.
+        #for all intents and purposes, "new" is basically regular, with exception of saving handling.
+
+        self.closeButton = closeButton(self)
+        self.tabLabel = tk.Label(self, text="")
+        self.tabLabel.grid(column=0, row=0)
+        if file == "new":
+            self.file = file
+            self.tabLabel.config(text="Untitled")
+            self.text = ""
 
         if file is None:
             self.file = "default"
-            self.name = "Untitled"
+            self.tabLabel.config(text="Untitled")
             self.text = ""
-        else:
+        elif not file == "new":
             self.file = file
-            self.name = self.file.split('/')[-1]
+            self.tabLabel.config(text=self.file.split('/')[-1])
             with open(self.file, 'r') as openFile:
                 self.text = openFile.read()
         self.visible = True
         self.active = True
-
+        self.config(width=15)
         #Other things we can keep track of on a file by file basis
+        #This keeps track of where we are in the file, so when we tab back and forth it doesn't reset back to the top.
         self.currentYView = ""
+        #We use this for the * sign next to the name.
         self.edited = False
-        self.light = True
+        #This will help with the tabs not changing color correctly.
 
-
-
-
-
-        self.grid(column=0, row=0)
+        if self.parent.parent.light == True:
+            self.light = True
+        else:
+            self.light = False
         self.config(borderwidth=2, relief="groove")
-        self.bind("<Button-1>", lambda x: self.parent.setActiveTab(self))
+        #self.bind("<Button-1>", lambda x: self.parent.setActiveTab(self))
+        self.tabLabel.bind("<Button-1>", lambda x: self.parent.setActiveTab(self))
 
     def saveText(self, *args):
         self.text = self.parent.parent.textArea.get(1.0,"end-1c")
 
     def set_dark_mode(self, *args):
-        self.config(bg="#282c34")
-        self.config(fg="white")
+        self.tabLabel.config(bg="#282c34")
+        self.tabLabel.config(fg="white")
+        self.closeButton.config(fg="white")
+        self.closeButton.config(bg="#282c34")
         self.light = False
 
     def set_light_mode(self, *args):
-        self.config(bg="white")
-        self.config(fg="black")
+        self.tabLabel.config(bg="white")
+        self.tabLabel.config(fg="black")
+        self.closeButton.config(fg="black")
+        self.closeButton.config(bg="white")
         self.light = True
 
 class TabManager(tk.Frame):
@@ -74,9 +101,11 @@ class TabManager(tk.Frame):
         #On startup there is no saved file yet, so we don't have a dir/file to put in place.
         #Lets make a default tab object and insert it in
         self.grid(column=0,columnspan=3, row=0,sticky=(tk.N,tk.W,tk.E,tk.S))
-        self.config(height=30)
+        self.config(height=3)
         self.tabs = []
+        self.numberOfTabs = 0
         self.addNewTab(None)
+
 
     def set_dark_mode(self, *args):
         for tab in self.tabs:
@@ -108,9 +137,13 @@ class TabManager(tk.Frame):
 
     def removeTab(self, tab):
         self.tabs.remove(tab)
+        tab.grid_forget()
+        self.activeTab = self.tabs[-1]
+        self.numberOfTabs = self.numberOfTabs -1
         self.updateTabDisplay()
 
     def updateTabDisplay(self):
+
         self.activeTab.active = True
         #If we're updating our tab display, we also need to make sure we set the correct active tab.
         #Thus we will always take the tab that needs to be active.
@@ -127,27 +160,36 @@ class TabManager(tk.Frame):
         for tab in self.tabs:
             if tab != self.activeTab:
                 if tab.light == True:
+                    tab.tabLabel.config(bg="lightgrey")
                     tab.config(bg="lightgrey")
                 else:
+                    tab.tabLabel.config(bg="#15171c")
                     tab.config(bg="#15171c")
-                    tab.config(fg="grey")
+                    tab.tabLabel.config(fg="grey")
             else:
                 if tab.light == True:
+                    tab.tabLabel.config(bg="white")
                     tab.config(bg="white")
                 else:
+                    tab.tabLabel.config(bg="#282c34")
                     tab.config(bg="#282c34")
-                    tab.config(fg="white")
+                    tab.tabLabel.config(fg="white")
+
+        if len(self.tabs) > self.numberOfTabs:
+            self.numberOfTabs = self.numberOfTabs + 1
+            for index, tab in enumerate(self.tabs):
+                tab.grid(column=index, row=0)
+
         for index, tab in enumerate(self.tabs):
-            tab.grid(column=index, row=0)
-            if tab.edited == True:
-                tab.configure(text=tab.name + "*")
-            else:
-                tab.configure(text=tab.name)
+            if tab.edited == True and not tab.tabLabel.cget("text")[-1] == "*":
+                    tab.tabLabel.configure(text=tab.tabLabel.cget("text") + "*")
+            elif tab.tabLabel.cget("text")[-1] == "*" and tab.edited == False:
+                tab.tabLabel.configure(text=tab.tabLabel.cget("text")[:-1])
             if not tab.active:
                 tab.configure(bg = "grey")
-
         #When we update the Tab display we also need to update our text that is displayed as well.
-        self.parent.textArea.replace_text(self.activeTab.text)
+        if not self.activeTab.text == "":
+            self.parent.textArea.replace_text(self.activeTab.text)
         self.parent.lineNumber.updateLineNumbers("tab")
 
 class YScrollBar(tk.Scrollbar):
@@ -375,7 +417,7 @@ class MainMenu(tk.Menu):
 
 
         self.file_options = tk.Menu(self, tearoff=0)
-        self.file_options.add_command(label=self.formatMenuEntry('New'))
+        self.file_options.add_command(label=self.formatMenuEntry('New'), command=lambda: self.parent.tabManager.addNewTab("new"))
         self.file_options.add_command(label=self.formatMenuEntry('Open') + "Ctrl+O", command=self.parent.open_file)
         self.file_options.add_command(label=self.formatMenuEntry('Save')  + "Ctrl+S", command=self.parent.save_file)
         self.file_options.add_command(label=self.formatMenuEntry('Save as...'), command=self.parent.save_file_as)
@@ -397,7 +439,6 @@ class MainMenu(tk.Menu):
         self.add_cascade(label="Format", menu=self.format_options)
         self.add_cascade(label="Clear all", command=lambda: self.parent.textArea.delete(1.0,tk.END))
         self.add_cascade(label="Dark Mode", command=self.parent.set_dark_mode)
-        self.add_cascade(label="Add Tab", command=lambda: self.parent.tabManager.addNewTab(None))
 
     def formatMenuEntry(self, menuEntryText, *args):
         formattedString = '{0: <20}'.format(menuEntryText)
@@ -413,7 +454,7 @@ class MainApplication(tk.Frame):
         #Varibles
         self.filename = ""
         self.numberOfKeyPresses = 0
-
+        self.light = True
         #Setting Parent/Parent config
         self.parent = parent
         self.parent.title("pyNotePad")
@@ -500,6 +541,7 @@ class MainApplication(tk.Frame):
         self.tabManager.updateTabDisplay()
 
     def set_dark_mode(self, *args):
+        self.light = False
         self.InfoText.set_dark_mode()
         self.textArea.set_dark_mode()
         self.lineNumber.set_dark_mode()
@@ -508,6 +550,7 @@ class MainApplication(tk.Frame):
         self.main_menu.entryconfig(5, label="Light Mode", command=self.set_light_mode)
 
     def set_light_mode(self, *args):
+        self.light = True
         self.InfoText.set_light_mode()
         self.textArea.set_light_mode()
         self.lineNumber.set_light_mode()
