@@ -68,6 +68,7 @@ class Tab(tk.Frame):
         #self.bind("<Button-1>", lambda x: self.parent.setActiveTab(self))
         self.tabLabel.bind("<Button-1>", lambda x: self.parent.setActiveTab(self))
 
+
     def saveText(self, *args):
         self.text = self.parent.parent.textArea.get(1.0,"end-1c")
 
@@ -149,7 +150,7 @@ class TabManager(tk.Frame):
         #Thus we will always take the tab that needs to be active.
 
         #If we just opened our program, we will have an empty default tab, we should remove this if there is nothing in it.
-        #However, if we only have one tab, we shouldn't remove it.
+        #However, if we only have one tab, we shouldn't remove it unless it's the default tab.
         tabToRemove = ""
         if len(self.tabs) == 2:
             for tab in self.tabs:
@@ -179,6 +180,9 @@ class TabManager(tk.Frame):
             self.numberOfTabs = self.numberOfTabs + 1
             for index, tab in enumerate(self.tabs):
                 tab.grid(column=index, row=0)
+                tab.parent.parent.parent.update()
+                tab.configure(height=tab.winfo_height(), width=tab.winfo_width()+10)
+                tab.grid_propagate(0)
         for index, tab in enumerate(self.tabs):
             if tab.edited == True and not tab.tabLabel.cget("text")[-1] == "*":
                     tab.tabLabel.configure(text=tab.tabLabel.cget("text") + "*")
@@ -393,8 +397,13 @@ class TextArea(tk.Text):
         self.config(relief="flat")
 
     def replace_text(self, text):
+        #we need to save our mouse position or it'll get reset everytime.
+        mousePOS = self.index(tk.INSERT)
+        print(mousePOS)
         self.delete(1.0,tk.END)
         self.insert(tk.END, text)
+        self.mark_set("insert", mousePOS)
+
 
     def set_dark_mode(self, *args):
         self.config(bg="#282c34")
