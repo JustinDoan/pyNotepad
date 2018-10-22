@@ -139,7 +139,13 @@ class TabManager(tk.Frame):
     def removeTab(self, tab):
         self.tabs.remove(tab)
         tab.grid_forget()
-        self.activeTab = self.tabs[-1]
+        try:
+            self.activeTab = self.tabs[-1]
+        except:
+            #if we end up getting an exception here, it means there are no tabs left, so we move to close the program
+
+            #Should make a method that handles any quit requests and checks for any unsaved data/prompts user to save
+            quit()
         self.numberOfTabs = self.numberOfTabs -1
         self.updateTabDisplay()
 
@@ -181,13 +187,18 @@ class TabManager(tk.Frame):
             for index, tab in enumerate(self.tabs):
                 tab.grid(column=index, row=0)
                 tab.parent.parent.parent.update()
-                tab.configure(height=tab.winfo_height(), width=tab.winfo_width()+10)
+                tab.configure(height=tab.winfo_height(), width=tab.winfo_width())
                 tab.grid_propagate(0)
         for index, tab in enumerate(self.tabs):
+            tab.grid_propagate(1)
             if tab.edited == True and not tab.tabLabel.cget("text")[-1] == "*":
                     tab.tabLabel.configure(text=tab.tabLabel.cget("text") + "*")
+                    tab.configure(height=tab.winfo_height(), width=tab.winfo_width())
+                    tab.grid_propagate(0)
             elif tab.tabLabel.cget("text")[-1] == "*" and tab.edited == False:
                 tab.tabLabel.configure(text=tab.tabLabel.cget("text")[:-1])
+                tab.configure(height=tab.winfo_height(), width=tab.winfo_width())
+                tab.grid_propagate(0)
         #When we update the Tab display we also need to update our text that is displayed as well.
         if not self.activeTab.text == "":
             self.parent.textArea.replace_text(self.activeTab.text)
