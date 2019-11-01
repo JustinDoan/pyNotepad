@@ -10,6 +10,10 @@ Dark Mode\
 Scroll Bars!\
 Python Syntax Highlighting!
 
+## Contributing
+
+If you'd like to contribute, just pull the project down to your local machine, checkout the development branch of the project, and then make a PR with your changes.
+
 ## How can I use it?
 If you have python 3.5+ installed, you can simply clone the repository and run main.py, it will work right out of the box and doesn't contain any dependedencies. 
 In the future there will be an option to download an exe version of it, for useage on computers that don't have python installed.
